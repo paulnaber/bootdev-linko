@@ -21,6 +21,12 @@ type server struct {
 	cancel     context.CancelFunc
 }
 
+const logContextKey contextKey = "log_context"
+
+type LogContext struct {
+	Username string
+}
+
 func newServer(store store.Store, port int, logger *slog.Logger, cancel context.CancelFunc) *server {
 	mux := http.NewServeMux()
 
@@ -99,11 +105,17 @@ func requestLogger(logger *slog.Logger) func(http.Handler) http.Handler {
 
 			spyWriter := &spyResponseWriter{ResponseWriter: w}
 			spyReader := &spyReadCloser{ReadCloser: r.Body}
+
+			// pointer to struct, so every request has its own struct
+			// this way other middleware can access or write the struct
+			logContext := &LogContext{}
+
 			r.Body = spyReader
+			r = r.WithContext(context.WithValue(r.Context(), logContextKey, logContext))
 			start := time.Now()
 			next.ServeHTTP(spyWriter, r)
 
-			logger.Info("Served request",
+			attrs := []any{
 				slog.Duration("duration", time.Since(start)),
 				slog.Int("request_body_bytes", spyReader.bytesRead),
 				slog.Int("response_status", spyWriter.statusCode),
@@ -111,7 +123,12 @@ func requestLogger(logger *slog.Logger) func(http.Handler) http.Handler {
 				slog.String("method", r.Method),
 				slog.String("path", r.URL.Path),
 				slog.String("client_ip", r.RemoteAddr),
-			)
+			}
+			if logContext.Username != "" {
+				attrs = append(attrs, slog.String("user", logContext.Username))
+			}
+
+			logger.Info("Served request", attrs...)
 		})
 	}
 }
