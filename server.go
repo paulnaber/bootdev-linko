@@ -21,12 +21,6 @@ type server struct {
 	cancel     context.CancelFunc
 }
 
-const logContextKey contextKey = "log_context"
-
-type LogContext struct {
-	Username string
-}
-
 func newServer(store store.Store, port int, logger *slog.Logger, cancel context.CancelFunc) *server {
 	mux := http.NewServeMux()
 
@@ -99,35 +93,48 @@ func (w *spyResponseWriter) WriteHeader(statusCode int) {
 	w.ResponseWriter.WriteHeader(statusCode)
 }
 
+const logContextKey contextKey = "log_context"
+
+type LogContext struct {
+	Username string
+	Error    error
+}
+
+func httpError(ctx context.Context, w http.ResponseWriter, status int, err error) {
+	if logCtx, ok := ctx.Value(logContextKey).(*LogContext); ok {
+		logCtx.Error = err
+	}
+	http.Error(w, err.Error(), status)
+}
+
 func requestLogger(logger *slog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-			spyWriter := &spyResponseWriter{ResponseWriter: w}
-			spyReader := &spyReadCloser{ReadCloser: r.Body}
-
-			// pointer to struct, so every request has its own struct
-			// this way other middleware can access or write the struct
-			logContext := &LogContext{}
-
-			r.Body = spyReader
-			r = r.WithContext(context.WithValue(r.Context(), logContextKey, logContext))
 			start := time.Now()
+			spyReader := &spyReadCloser{ReadCloser: r.Body}
+			r.Body = spyReader
+			spyWriter := &spyResponseWriter{ResponseWriter: w}
+
+			logCtx := &LogContext{}
+			r = r.WithContext(context.WithValue(r.Context(), logContextKey, logCtx))
+
 			next.ServeHTTP(spyWriter, r)
 
 			attrs := []any{
+				slog.String("method", r.Method),
+				slog.String("path", r.URL.Path),
+				slog.String("client_ip", r.RemoteAddr),
 				slog.Duration("duration", time.Since(start)),
 				slog.Int("request_body_bytes", spyReader.bytesRead),
 				slog.Int("response_status", spyWriter.statusCode),
 				slog.Int("response_body_bytes", spyWriter.bytesWritten),
-				slog.String("method", r.Method),
-				slog.String("path", r.URL.Path),
-				slog.String("client_ip", r.RemoteAddr),
 			}
-			if logContext.Username != "" {
-				attrs = append(attrs, slog.String("user", logContext.Username))
+			if logCtx.Username != "" {
+				attrs = append(attrs, slog.String("user", logCtx.Username))
 			}
-
+			if logCtx.Error != nil {
+				attrs = append(attrs, slog.Any("error", logCtx.Error))
+			}
 			logger.Info("Served request", attrs...)
 		})
 	}
