@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"boot.dev/linko/internal/store"
@@ -104,7 +105,30 @@ func httpError(ctx context.Context, w http.ResponseWriter, status int, err error
 	if logCtx, ok := ctx.Value(logContextKey).(*LogContext); ok {
 		logCtx.Error = err
 	}
-	http.Error(w, err.Error(), status)
+	msg := err.Error()
+	if status == 500 || status == 401 || status == 403 {
+		msg = http.StatusText(status)
+	}
+	http.Error(w, msg, status)
+}
+
+func redactIP(ip string) string {
+	host, _, err := net.SplitHostPort(ip)
+	if err != nil {
+		host = ip
+	}
+	parsedIp := net.ParseIP(host)
+	if parsedIp == nil {
+		return ip
+	}
+
+	ip4 := parsedIp.To4()
+	if ip4 != nil {
+		parts := strings.Split(ip4.String(), ".")
+		parts[3] = "x"
+		return strings.Join(parts, ".")
+	}
+	return ip
 }
 
 func requestLogger(logger *slog.Logger) func(http.Handler) http.Handler {
@@ -123,7 +147,7 @@ func requestLogger(logger *slog.Logger) func(http.Handler) http.Handler {
 			attrs := []any{
 				slog.String("method", r.Method),
 				slog.String("path", r.URL.Path),
-				slog.String("client_ip", r.RemoteAddr),
+				slog.String("client_ip", redactIP(r.RemoteAddr)),
 				slog.Duration("duration", time.Since(start)),
 				slog.Int("request_body_bytes", spyReader.bytesRead),
 				slog.Int("response_status", spyWriter.statusCode),
