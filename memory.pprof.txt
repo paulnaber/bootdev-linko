@@ -1,0 +1,35 @@
+File: linko
+Type: inuse_space
+Time: 2026-04-25 14:15:23 CEST
+Duration: 30s, Total samples = 4028.11kB 
+Showing nodes accounting for 2222.94kB, 55.19% of 4028.11kB total
+      flat  flat%   sum%        cum   cum%
+ 2613.49kB 64.88% 64.88%  2613.49kB 64.88%  internal/bytealg.MakeNoZero
+ -902.59kB 22.41% 42.47%  -902.59kB 22.41%  compress/flate.NewWriter (inline)
+  512.03kB 12.71% 55.19%   512.03kB 12.71%  syscall.anyToSockaddr
+         0     0% 55.19%  -902.59kB 22.41%  compress/gzip.(*Writer).Write
+         0     0% 55.19%   512.03kB 12.71%  internal/poll.(*FD).Accept
+         0     0% 55.19%   512.03kB 12.71%  internal/poll.accept
+         0     0% 55.19%  -902.59kB 22.41%  internal/profile.(*Profile).Write
+         0     0% 55.19%  2613.49kB 64.88%  main.(*server).handlerRedirect
+         0     0% 55.19%   512.03kB 12.71%  main.(*server).start
+         0     0% 55.19%  -902.59kB 22.41%  main.newServer.(*server).authMiddleware.func5
+         0     0% 55.19%  1710.91kB 42.47%  main.newServer.metricsMiddleware.func3
+         0     0% 55.19%  1710.91kB 42.47%  main.newServer.newServer.requestLogger.func1.func2
+         0     0% 55.19%  1710.91kB 42.47%  main.newServer.requestIdMiddleware.func4
+         0     0% 55.19%   512.03kB 12.71%  main.run.func2
+         0     0% 55.19%   512.03kB 12.71%  net.(*TCPListener).Accept
+         0     0% 55.19%   512.03kB 12.71%  net.(*TCPListener).accept
+         0     0% 55.19%   512.03kB 12.71%  net.(*netFD).accept
+         0     0% 55.19%  1710.91kB 42.47%  net/http.(*ServeMux).ServeHTTP
+         0     0% 55.19%   512.03kB 12.71%  net/http.(*Server).Serve
+         0     0% 55.19%  1710.91kB 42.47%  net/http.(*conn).serve
+         0     0% 55.19%  1710.91kB 42.47%  net/http.HandlerFunc.ServeHTTP
+         0     0% 55.19%  1710.91kB 42.47%  net/http.serverHandler.ServeHTTP
+         0     0% 55.19%  -902.59kB 22.41%  net/http/pprof.Index
+         0     0% 55.19%  -902.59kB 22.41%  net/http/pprof.handler.ServeHTTP
+         0     0% 55.19%  -902.59kB 22.41%  net/http/pprof.handler.serveDeltaProfile
+         0     0% 55.19%  2613.49kB 64.88%  strings.(*Builder).Grow
+         0     0% 55.19%  2613.49kB 64.88%  strings.(*Builder).grow
+         0     0% 55.19%  2613.49kB 64.88%  strings.Repeat
+         0     0% 55.19%   512.03kB 12.71%  syscall.Accept
